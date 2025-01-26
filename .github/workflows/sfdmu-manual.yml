@@ -22,19 +22,17 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      # Step 2: Install Salesforce CLI
+      # Step 2: Install Salesforce CLI using the official GitHub Action
       - name: Install Salesforce CLI
-        run: |
-          wget https://developer.salesforce.com/media/salesforce-cli/sfdx-linux-amd64.tar.xz
-          mkdir sfdx-cli
-          tar xJf sfdx-linux-amd64.tar.xz -C sfdx-cli --strip-components 1
-          ./sfdx-cli/install
+        uses: salesforcecli/sfdx-cli@v2
+        with:
+          version: latest # You can specify a specific version if needed
 
       # Step 3: Install SFDMU
       - name: Install SFDMU
         run: npm install -g sfdmu
 
-      # Optional: Verify installations
+      # Step 4: Verify Installations (Optional)
       - name: Verify Salesforce CLI Installation
         run: sfdx --version
 
