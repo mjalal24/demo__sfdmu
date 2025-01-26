@@ -11,7 +11,7 @@ on:
       config_file:
         description: 'Path to SFDMU configuration file'
         required: false
-        default: 'config/sfdmu.json'
+        default: 'sfdmu.json'
 
 jobs:
   setup-environment:
@@ -20,84 +20,38 @@ jobs:
     steps:
       # Step 1: Checkout the repository
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
-      # Step 2: Set up Node.js and Cache npm dependencies
-      - name: Set up Node.js and Cache npm
+      # Step 2: Set up Node.js LTS version
+      - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 'lts/*' # Ensures the latest LTS version is installed
-          cache: 'npm'          # Automatically caches npm dependencies
 
       # Step 3: Verify Node.js Installation (Optional)
       - name: Verify Node.js Installation
         run: node --version
 
-      # Step 4: Configure a custom global npm directory
-      - name: Configure npm Global Directory
-        run: |
-          mkdir -p $HOME/.npm-global
-          npm config set prefix "$HOME/.npm-global"
-
-      # Step 5: Add npm Global to PATH
-      - name: Add npm Global to PATH
-        run: echo "$HOME/.npm-global/bin" >> $GITHUB_PATH
-
-      # Step 6: Cache npm Global Packages (Salesforce CLI)
-      - name: Cache npm Global Packages
-        id: cache-npm-global
-        uses: actions/cache@v3
+      # Step 4: Install SFDMU using patrykacc/sf-cli-setup
+      - name: Install Salesforce CLI and SFDMU Plugin
+        uses: patrykacc/sf-cli-setup@v1.1.0
         with:
-          path: $HOME/.npm-global
-          key: ${{ runner.os }}-npm-global-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-npm-global-
+          # Optionally specify the CLI version
+          # version: 'latest' # Defaults to latest if not specified
 
-      # Step 7: Install Salesforce CLI via npm (if not cached)
-      - name: Install Salesforce CLI
-        run: |
-          if ! command -v sf &> /dev/null
-          then
-            echo "Salesforce CLI not found. Installing..."
-            npm install @salesforce/cli --global
-          else
-            echo "Salesforce CLI already installed."
-          fi
-
-      # Step 8: Cache SFDMU Plugin
-      - name: Cache SFDMU Plugin
-        id: cache-sfdmu
-        uses: actions/cache@v3
-        with:
-          path: $HOME/.local/share/sfdx/plugins
-          key: ${{ runner.os }}-sfdmu-${{ hashFiles('sfdmu-plugin-version.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-sfdmu-
-
-      # Step 9: Install SFDMU as a Salesforce CLI Plugin (if not cached)
-      - name: Install SFDMU Plugin
-        run: |
-          if ! sf plugins list | grep -q "sfdmu"
-          then
-            echo "SFDMU plugin not found. Installing..."
-            sf plugins install sfdmu
-            # Save the installed version to a file for cache key hashing
-            sf plugins list | grep "sfdmu" | awk '{print $2}' > sfdmu-plugin-version.txt
-          else
-            echo "SFDMU plugin already installed."
-            sf plugins list | grep "sfdmu" | awk '{print $2}' > sfdmu-plugin-version.txt
-          fi
-
-      # Step 10: Restore SFDMU Plugin Cache if Available
-      - name: Restore SFDMU Plugin Cache
-        if: steps.cache-sfdmu.outputs.cache-hit != 'true'
-        run: |
-          echo "SFDMU plugin cache miss. Proceeding without restoring cache."
-
-      # Step 11: Verify Salesforce CLI Installation (Optional)
+      # Step 5: Verify Salesforce CLI Installation (Optional)
       - name: Verify Salesforce CLI Installation
         run: sf --version
 
-      # Step 12: Verify SFDMU Installation (Optional)
+      # Step 6: Install SFDMU as a Salesforce CLI Plugin
+      - name: Install SFDMU Plugin
+        run: sf plugins install sfdmu
+
+      # Step 7: Verify SFDMU Installation (Optional)
       - name: Verify SFDMU Installation
         run: sf sfdmu run --version
+
+      # Step 8: Execute SFDMU Operation
+      - name: Execute SFDMU Operation
+        run: |
+          sf sfdmu run --operation ${{ github.event.inputs.operation }} --config ${{ github.event.inputs.config_file }}
