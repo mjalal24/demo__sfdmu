@@ -1,0 +1,60 @@
+name: SFDMU Manual Workflow
+
+# Allows the workflow to be manually triggered
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: 'SFDMU Operation to perform (import/export)'
+        required: true
+        default: 'import'
+      config_file:
+        description: 'Path to SFDMU configuration file'
+        required: false
+        default: 'sfdmu.json'
+
+jobs:
+  run-sfdmu:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16' # Specify the Node.js version compatible with SFDMU
+
+      - name: Install SFDMU
+        run: npm install -g sfdmu
+
+      - name: Configure Salesforce Authentication
+        env:
+          SF_USERNAME: ${{ secrets.SF_USERNAME }}
+          SF_PASSWORD: ${{ secrets.SF_PASSWORD }}
+          SF_TOKEN: ${{ secrets.SF_TOKEN }}
+          SF_LOGIN_URL: ${{ secrets.SF_LOGIN_URL }}
+        run: |
+          sfdmu auth:login \
+            --username "$SF_USERNAME" \
+            --password "$SF_PASSWORD" \
+            --token "$SF_TOKEN" \
+            --login-url "$SF_LOGIN_URL"
+
+      - name: Run SFDMU Operation
+        env:
+          CONFIG_FILE: ${{ github.event.inputs.config_file }}
+          OPERATION: ${{ github.event.inputs.operation }}
+        run: |
+          if [ "$OPERATION" = "import" ]; then
+            sfdmu run --config "$CONFIG_FILE" --operation Import
+          elif [ "$OPERATION" = "export" ]; then
+            sfdmu run --config "$CONFIG_FILE" --operation Export
+          else
+            echo "Invalid operation specified. Use 'import' or 'export'."
+            exit 1
+          fi
+
+      - name: Logout from Salesforce
+        run: sfdmu auth:logout
