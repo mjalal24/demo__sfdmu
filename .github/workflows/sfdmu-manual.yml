@@ -11,7 +11,7 @@ on:
       config_file:
         description: 'Path to SFDMU configuration file'
         required: false
-        default: 'sfdmu.json'
+        default: 'config/sfdmu.json'
 
 jobs:
   setup-environment:
@@ -20,34 +20,40 @@ jobs:
     steps:
       # Step 1: Checkout the repository
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      # Step 2: Set up Node.js LTS version
-      - name: Set up Node.js
+      # Step 2: Set up Node.js and Cache npm dependencies
+      - name: Set up Node.js and Cache npm
         uses: actions/setup-node@v3
         with:
           node-version: 'lts/*' # Ensures the latest LTS version is installed
+          cache: 'npm'          # Automatically caches npm dependencies
 
-      # Step 3: Configure a custom global npm directory
+      # Step 3: Verify Node.js Installation (Optional)
+      - name: Verify Node.js Installation
+        run: node --version
+
+      # Step 4: Configure a custom global npm directory
       - name: Configure npm Global Directory
         run: |
           mkdir -p $HOME/.npm-global
           npm config set prefix "$HOME/.npm-global"
-      
-      # Step 4: Add the custom npm global bin to PATH
+
+      # Step 5: Add npm Global to PATH
       - name: Add npm Global to PATH
         run: echo "$HOME/.npm-global/bin" >> $GITHUB_PATH
 
-      # Step 5: Restore cached global npm modules (Salesforce CLI)
-      - name: Restore npm Global Cache
+      # Step 6: Cache npm Global Packages (Salesforce CLI)
+      - name: Cache npm Global Packages
+        id: cache-npm-global
         uses: actions/cache@v3
         with:
           path: $HOME/.npm-global
-          key: ${{ runner.os }}-npm-global-${{ hashFiles('**/package-lock.json') }}
+          key: ${{ runner.os }}-npm-global-${{ hashFiles('package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-npm-global-
 
-      # Step 6: Install Salesforce CLI via npm (if not cached)
+      # Step 7: Install Salesforce CLI via npm (if not cached)
       - name: Install Salesforce CLI
         run: |
           if ! command -v sf &> /dev/null
@@ -58,32 +64,40 @@ jobs:
             echo "Salesforce CLI already installed."
           fi
 
-      # Step 7: Restore cached SFDMU plugin
-      - name: Restore SFDMU Plugin Cache
+      # Step 8: Cache SFDMU Plugin
+      - name: Cache SFDMU Plugin
+        id: cache-sfdmu
         uses: actions/cache@v3
         with:
           path: $HOME/.local/share/sfdx/plugins
-          key: ${{ runner.os }}-sfdx-plugins-${{ hashFiles('**/package-lock.json') }}
+          key: ${{ runner.os }}-sfdmu-${{ hashFiles('sfdmu-plugin-version.txt') }}
           restore-keys: |
-            ${{ runner.os }}-sfdx-plugins-
+            ${{ runner.os }}-sfdmu-
 
-      # Step 8: Install SFDMU as a Salesforce CLI Plugin (if not cached)
+      # Step 9: Install SFDMU as a Salesforce CLI Plugin (if not cached)
       - name: Install SFDMU Plugin
         run: |
           if ! sf plugins list | grep -q "sfdmu"
           then
             echo "SFDMU plugin not found. Installing..."
             sf plugins install sfdmu
+            # Save the installed version to a file for cache key hashing
+            sf plugins list | grep "sfdmu" | awk '{print $2}' > sfdmu-plugin-version.txt
           else
             echo "SFDMU plugin already installed."
+            sf plugins list | grep "sfdmu" | awk '{print $2}' > sfdmu-plugin-version.txt
           fi
 
-      # Step 9: Verify Salesforce CLI Installation (Optional)
+      # Step 10: Restore SFDMU Plugin Cache if Available
+      - name: Restore SFDMU Plugin Cache
+        if: steps.cache-sfdmu.outputs.cache-hit != 'true'
+        run: |
+          echo "SFDMU plugin cache miss. Proceeding without restoring cache."
+
+      # Step 11: Verify Salesforce CLI Installation (Optional)
       - name: Verify Salesforce CLI Installation
         run: sf --version
 
-      # Step 10: Verify SFDMU Installation (Optional)
+      # Step 12: Verify SFDMU Installation (Optional)
       - name: Verify SFDMU Installation
         run: sf sfdmu run --version
-
-
