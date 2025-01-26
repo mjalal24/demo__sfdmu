@@ -14,47 +14,29 @@ on:
         default: 'sfdmu.json'
 
 jobs:
-  run-sfdmu:
+  setup-environment:
     runs-on: ubuntu-latest
 
     steps:
+      # Step 1: Checkout the repository
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '16' # Specify the Node.js version compatible with SFDMU
+      # Step 2: Install Salesforce CLI
+      - name: Install Salesforce CLI
+        run: |
+          wget https://developer.salesforce.com/media/salesforce-cli/sfdx-linux-amd64.tar.xz
+          mkdir sfdx-cli
+          tar xJf sfdx-linux-amd64.tar.xz -C sfdx-cli --strip-components 1
+          ./sfdx-cli/install
 
+      # Step 3: Install SFDMU
       - name: Install SFDMU
         run: npm install -g sfdmu
 
-      - name: Configure Salesforce Authentication
-        env:
-          SF_USERNAME: ${{ secrets.SF_USERNAME }}
-          SF_PASSWORD: ${{ secrets.SF_PASSWORD }}
-          SF_TOKEN: ${{ secrets.SF_TOKEN }}
-          SF_LOGIN_URL: ${{ secrets.SF_LOGIN_URL }}
-        run: |
-          sfdmu auth:login \
-            --username "$SF_USERNAME" \
-            --password "$SF_PASSWORD" \
-            --token "$SF_TOKEN" \
-            --login-url "$SF_LOGIN_URL"
+      # Optional: Verify installations
+      - name: Verify Salesforce CLI Installation
+        run: sfdx --version
 
-      - name: Run SFDMU Operation
-        env:
-          CONFIG_FILE: ${{ github.event.inputs.config_file }}
-          OPERATION: ${{ github.event.inputs.operation }}
-        run: |
-          if [ "$OPERATION" = "import" ]; then
-            sfdmu run --config "$CONFIG_FILE" --operation Import
-          elif [ "$OPERATION" = "export" ]; then
-            sfdmu run --config "$CONFIG_FILE" --operation Export
-          else
-            echo "Invalid operation specified. Use 'import' or 'export'."
-            exit 1
-          fi
-
-      - name: Logout from Salesforce
-        run: sfdmu auth:logout
+      - name: Verify SFDMU Installation
+        run: sfdmu --version
