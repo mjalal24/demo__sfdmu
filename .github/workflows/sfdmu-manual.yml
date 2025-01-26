@@ -38,12 +38,40 @@ jobs:
 
       # Step 5: Verify Salesforce CLI Installation (Optional)
       - name: Verify Salesforce CLI Installation
-        run: sfdx --version
+        run: sf --version
 
-      # Step 6: Install SFDMU
-      - name: Install SFDMU
-        run: npm install -g sfdmu
+      # Step 6: Install SFDMU as a Salesforce CLI Plugin
+      - name: Install SFDMU Plugin
+        run: sf plugins install sfdmu
 
       # Step 7: Verify SFDMU Installation (Optional)
       - name: Verify SFDMU Installation
         run: sfdmu --version
+
+      # Optional Steps: Authenticate and Run SFDMU Operation
+      # Uncomment the following steps if you wish to perform operations
+
+      # Step 8: Authenticate with Salesforce CLI
+      # - name: Authenticate Salesforce CLI
+      #   env:
+      #     SF_USERNAME: ${{ secrets.SF_USERNAME }}
+      #     SF_PASSWORD: ${{ secrets.SF_PASSWORD }}
+      #     SF_TOKEN: ${{ secrets.SF_TOKEN }}
+      #     SF_LOGIN_URL: ${{ secrets.SF_LOGIN_URL }}
+      #   run: |
+      #     echo "$SF_PASSWORD$SF_TOKEN" | sf auth login --username "$SF_USERNAME" --password-stdin --instance-url "$SF_LOGIN_URL"
+
+      # Step 9: Run SFDMU Operation
+      # - name: Run SFDMU Operation
+      #   env:
+      #     CONFIG_FILE: ${{ github.event.inputs.config_file }}
+      #     OPERATION: ${{ github.event.inputs.operation }}
+      #   run: |
+      #     if [ "$OPERATION" = "import" ]; then
+      #       sfdmu run --config "$CONFIG_FILE" --operation Import
+      #     elif [ "$OPERATION" = "export" ]; then
+      #       sfdmu run --config "$CONFIG_FILE" --operation Export
+      #     else
+      #       echo "Invalid operation specified. Use 'import' or 'export'."
+      #       exit 1
+      #     fi
