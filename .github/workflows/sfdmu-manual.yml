@@ -22,19 +22,28 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      # Step 2: Install Salesforce CLI using the official GitHub Action
-      - name: Install Salesforce CLI
-        uses: salesforcecli/sfdx-cli@v2
+      # Step 2: Set up Node.js LTS version
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
         with:
-          version: latest # You can specify a specific version if needed
+          node-version: 'lts/*' # Ensures the latest LTS version is installed
 
-      # Step 3: Install SFDMU
-      - name: Install SFDMU
-        run: npm install -g sfdmu
+      # Step 3: Verify Node.js Installation (Optional)
+      - name: Verify Node.js Installation
+        run: node --version
 
-      # Step 4: Verify Installations (Optional)
+      # Step 4: Install Salesforce CLI via npm
+      - name: Install Salesforce CLI
+        run: npm install @salesforce/cli --global
+
+      # Step 5: Verify Salesforce CLI Installation (Optional)
       - name: Verify Salesforce CLI Installation
         run: sfdx --version
 
+      # Step 6: Install SFDMU
+      - name: Install SFDMU
+        run: npm install -g sfdmu
+
+      # Step 7: Verify SFDMU Installation (Optional)
       - name: Verify SFDMU Installation
         run: sfdmu --version
