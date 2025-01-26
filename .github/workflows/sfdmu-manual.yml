@@ -46,7 +46,7 @@ jobs:
 
       # Step 7: Verify SFDMU Installation (Optional)
       - name: Verify SFDMU Installation
-        run: sfdmu --version
+        run: sf sfdmu run --version
 
       # Optional Steps: Authenticate and Run SFDMU Operation
       # Uncomment the following steps if you wish to perform operations
