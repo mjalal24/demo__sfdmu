@@ -1,0 +1,7 @@
+{
+  "name": "sfdmu-workflow",
+  "version": "1.0.0",
+  "description": "Minimal package for SF CLI and SFDMU usage",
+  "private": true,
+  "dependencies": {}
+}
