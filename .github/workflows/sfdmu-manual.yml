@@ -69,26 +69,24 @@ jobs:
           echo "Installing Salesforce CLI..."
           npm install @salesforce/cli --global
 
-      # Step 8: Cache SFDMU Plugin (Note: This is already handled in Step 3)
-      # Removed to prevent redundancy
+      # Step 8: (SFDMU Plugin caching is handled in Step 3)
 
       # Step 9: Install SFDMU as a Salesforce CLI Plugin (only if cache miss)
       - name: Install SFDMU Plugin
         if: steps.cache-npm-and-global.outputs.cache-hit != 'true'
         run: |
-          if ! sf plugins --core | grep -q "sfdmu"
-          then
+          if ! sf plugins --core | grep -q "sfdmu"; then
             echo "SFDMU plugin not found. Installing..."
             sf plugins install sfdmu
             # Save the installed version to a file for cache key hashing
-            sf plugins list | grep "sfdmu" | awk '{print $2}' > sfdmu-plugin-version.txt
+            sf plugins --core | grep "sfdmu" | awk '{print $2}' > sfdmu-plugin-version.txt
           else
             echo "SFDMU plugin already installed."
-            sf plugins list | grep "sfdmu" | awk '{print $2}' > sfdmu-plugin-version.txt
+            sf plugins --core | grep "sfdmu" | awk '{print $2}' > sfdmu-plugin-version.txt
           fi
 
       # Step 10: Restore SFDMU Plugin Cache if Available
-      # Handled within the main cache step (Step 3). Removed for clarity.
+      # (Handled within the main cache step (Step 3))
 
       # Step 11: Verify Salesforce CLI Installation (Optional)
       - name: Verify Salesforce CLI Installation
@@ -97,5 +95,3 @@ jobs:
       # Step 12: Verify SFDMU Installation (Optional)
       - name: Verify SFDMU Installation
         run: sf sfdmu run --version
-
-      
