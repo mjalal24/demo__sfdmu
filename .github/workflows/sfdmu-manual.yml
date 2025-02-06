@@ -76,7 +76,7 @@ jobs:
       - name: Install SFDMU Plugin
         if: steps.cache-npm-and-global.outputs.cache-hit != 'true'
         run: |
-          if ! sf plugins list | grep -q "sfdmu"
+          if ! sf plugins --core | grep -q "sfdmu"
           then
             echo "SFDMU plugin not found. Installing..."
             sf plugins install sfdmu
@@ -98,11 +98,4 @@ jobs:
       - name: Verify SFDMU Installation
         run: sf sfdmu run --version
 
-      # Step 13: Install Project Dependencies
-      - name: Install Dependencies
-        run: npm ci
-
-      # Step 14: Execute SFDMU Operation
-      - name: Execute SFDMU Operation
-        run: |
-          sf sfdmu run --operation ${{ github.event.inputs.operation }} --config ${{ github.event.inputs.config_file }}
+      
