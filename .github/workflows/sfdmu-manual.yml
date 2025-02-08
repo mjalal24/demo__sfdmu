@@ -16,4 +16,4 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Verify Salesforce CLI Installation
-        run: sf --version
+        run: sf --version 
