@@ -1,14 +1,22 @@
-# Use the official Salesforce CLI slim image as the base.
-FROM salesforce/cli:2.77.1-slim
+# Use the official Node.js image as the base.
+FROM node:16
 
-# Switch to root (if needed) to install sfdx-git-delta.
-USER root
+# Install any additional OS-level dependencies (if needed).
+RUN apt-get update && \
+    apt-get install -y wget unzip && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install the Salesforce CLI globally via npm.
+RUN npm install -g sfdx-cli
 
 # Install sfdx-git-delta globally.
 RUN npm install -g sfdx-git-delta
 
-# Switch back to the default non-root user.
-USER sfdx
-
-# Set the working directory.
+# Create and set the working directory.
 WORKDIR /workspace
+
+# (Optional) Expose a port if needed by your application.
+# EXPOSE 8080
+
+# Default command (can be overridden by docker run).
+CMD ["bash"]

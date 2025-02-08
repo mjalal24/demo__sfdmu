@@ -1,4 +1,4 @@
-name: SF CLI Docker Workflow with Caching
+name: Custom SF CLI Image Workflow
 
 on:
   push:
@@ -6,37 +6,36 @@ on:
       - main
 
 jobs:
-  run-sf-cli:
-    runs-on: ubuntu-latest 
+  generate-manifest:
+    runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the repository (if needed)
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # Step 2: Restore (or create) a cache for the Docker image tar file
-      - name: Cache Docker Image
+      - name: Cache Custom Docker Image
         id: cache-docker
         uses: actions/cache@v3
         with:
-          # This is the file we will use to cache the Docker image.
-          path: sf-cli.tar
-          # The key uniquely identifies the cached content.
-          key: sf-cli-slim
+          path: custom-cli.tar
+          key: custom-cli-image
 
-      # Step 3: Load the Docker image from cache if available, otherwise pull and save it
-      - name: Load or Pull Docker Image
+      - name: Load or Build Custom Docker Image
         run: |
-          if [ -f sf-cli.tar ]; then
-            echo "Cached Docker image found. Loading the image..."
-            docker load -i sf-cli.tar
+          if [ -f custom-cli.tar ]; then
+            echo "Cached Docker image found. Loading image..."
+            docker load -i custom-cli.tar
           else
-            echo "No cached image found. Pulling image from Docker Hub..."
-            docker pull salesforce/cli:2.77.1-slim
-            echo "Saving the pulled image to cache..."
-            docker save salesforce/cli:2.77.1-slim -o sf-cli.tar
+            echo "No cached image found. Building custom Docker image..."
+            docker build -t custom-sfdx:latest .
+            docker save custom-sfdx:latest -o custom-cli.tar
           fi
 
-      # Step 4: Run the Salesforce CLI container to verify the version
-      - name: Run Salesforce CLI Container
-        run: docker run --rm salesforce/cli:2.77.1-slim sf --version
+      - name: Generate Manifest Using sfdx-git-delta
+        run: |
+          mkdir -p manifest
+          docker run --rm \
+            -v "$PWD":/workspace \
+            -w /workspace \
+            custom-sfdx:latest \
+            sh -c "sfdx-git-delta --from HEAD~1 --to HEAD --output manifest/package.xml && cat manifest/package.xml"
