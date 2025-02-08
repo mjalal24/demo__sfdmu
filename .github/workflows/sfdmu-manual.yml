@@ -1,16 +1,37 @@
-name: Install Salesforce CLI via npm
-on: [push, pull_request]
+name: SFDMU Workflow
+on:
+  push:
+    branches:
+      - main
 jobs:
-  install-sf-cli:
+  setup-environment:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-- name: Setup Node.js
-        uses: actions/setup-node@v3
+      # Step 1: Checkout the repository
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Node.js using the latest LTS version
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: '16'
-- name: Install Salesforce CLI
+          node-version: 'lts/*'
+
+      # Step 3: Configure a custom global npm directory
+      - name: Configure npm Global Directory
+        run: |
+          mkdir -p $HOME/.npm-global
+          npm config set prefix "$HOME/.npm-global"
+
+      # Step 4: Add npm Global Directory to PATH
+      - name: Add npm Global to PATH
+        run: echo "$HOME/.npm-global/bin" >> $GITHUB_PATH
+
+      # Step 5: Install Salesforce CLI via npm
+      - name: Install Salesforce CLI
         run: npm install @salesforce/cli --global
-- name: Verify installation
+
+      # Step 6: Verify Salesforce CLI Installation
+      - name: Verify Salesforce CLI Installation
         run: sf --version
