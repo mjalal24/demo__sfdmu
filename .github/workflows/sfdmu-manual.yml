@@ -32,11 +32,11 @@ jobs:
             docker load -i sf-cli.tar
           else
             echo "No cached image found. Pulling image from Docker Hub..."
-            docker pull salesforce/cli:slim
+            docker pull salesforce/cli:2.77.1-slim
             echo "Saving the pulled image to cache..."
-            docker save salesforce/cli:slim -o sf-cli.tar
+            docker save salesforce/cli:2.77.1-slim -o sf-cli.tar
           fi
 
       # Step 4: Run the Salesforce CLI container to verify the version
       - name: Run Salesforce CLI Container
-        run: docker run --rm salesforce/cli:slim sf --version
+        run: docker run --rm salesforce/cli:2.77.1-slim sf --version
