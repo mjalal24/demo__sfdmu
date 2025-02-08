@@ -1,4 +1,4 @@
-name: Custom SF CLI Image Workflow
+name: Custom SF CLI Image Workflow with sfdx-git-delta
 
 on:
   push:
@@ -10,9 +10,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Step 1: Checkout the repository (which includes the Dockerfile)
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      # Step 2: Cache the custom Docker image as a tar file.
       - name: Cache Custom Docker Image
         id: cache-docker
         uses: actions/cache@v3
@@ -20,6 +22,7 @@ jobs:
           path: custom-cli.tar
           key: custom-cli-image
 
+      # Step 3: Load the cached image if available, otherwise build it.
       - name: Load or Build Custom Docker Image
         run: |
           if [ -f custom-cli.tar ]; then
@@ -27,15 +30,17 @@ jobs:
             docker load -i custom-cli.tar
           else
             echo "No cached image found. Building custom Docker image..."
-            docker build -t custom-sfdx:latest .
-            docker save custom-sfdx:latest -o custom-cli.tar
+            docker build -t custom-sf:latest .
+            docker save custom-sf:latest -o custom-cli.tar
           fi
 
+      # Step 4: Run the container to generate and display the manifest.
       - name: Generate Manifest Using sfdx-git-delta
         run: |
+          # Create a directory for the manifest if it doesn't exist.
           mkdir -p manifest
           docker run --rm \
             -v "$PWD":/workspace \
             -w /workspace \
-            custom-sfdx:latest \
-            sh -c "sfdx-git-delta --from HEAD~1 --to HEAD --output manifest/package.xml && cat manifest/package.xml"
+            custom-sf:latest \
+            sh -c "sfdx-git-delta --from HEAD~1 --to HEAD --output manifest/package.xml && echo 'Generated manifest:' && cat manifest/package.xml"
