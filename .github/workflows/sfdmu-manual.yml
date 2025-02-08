@@ -8,8 +8,6 @@ on:
 jobs:
   generate-manifest:
     runs-on: ubuntu-latest
-  generate-manifest:
-    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Repository
