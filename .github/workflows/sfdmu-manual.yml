@@ -1,42 +1,42 @@
-name: SFDMU Manual Workflow
+name: SF CLI Docker Workflow with Caching
 
-# Allows the workflow to be manually triggered
 on:
-  workflow_dispatch:
-    inputs:
-      operation:
-        description: 'SFDMU Operation to perform (import/export)'
-        required: true
-        default: 'import'
-      config_file:
-        description: 'Path to SFDMU configuration file'
-        required: false
-        default: 'sfdmu.json'
+  push:
+    branches:
+      - main
 
 jobs:
-  setup-environment:
-    runs-on: ubuntu-latest
+  run-sf-cli:
+    runs-on: ubuntu-latest 
 
     steps:
-      # Step 1: Checkout the repository
+      # Step 1: Checkout the repository (if needed)
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      # Step 2: Install Salesforce CLI
-      - name: Install Salesforce CLI
+      # Step 2: Restore (or create) a cache for the Docker image tar file
+      - name: Cache Docker Image
+        id: cache-docker
+        uses: actions/cache@v3
+        with:
+          # This is the file we will use to cache the Docker image.
+          path: sf-cli.tar
+          # The key uniquely identifies the cached content.
+          key: sf-cli-slim
+
+      # Step 3: Load the Docker image from cache if available, otherwise pull and save it
+      - name: Load or Pull Docker Image
         run: |
-          wget https://developer.salesforce.com/media/salesforce-cli/sfdx-linux-amd64.tar.xz
-          mkdir sfdx-cli
-          tar xJf sfdx-linux-amd64.tar.xz -C sfdx-cli --strip-components 1
-          ./sfdx-cli/install
+          if [ -f sf-cli.tar ]; then
+            echo "Cached Docker image found. Loading the image..."
+            docker load -i sf-cli.tar
+          else
+            echo "No cached image found. Pulling image from Docker Hub..."
+            docker pull salesforce/cli:2.77.1-slim
+            echo "Saving the pulled image to cache..."
+            docker save salesforce/cli:2.77.1-slim -o sf-cli.tar
+          fi
 
-      # Step 3: Install SFDMU
-      - name: Install SFDMU
-        run: npm install -g sfdmu
-
-      # Optional: Verify installations
-      - name: Verify Salesforce CLI Installation
-        run: sfdx --version
-
-      - name: Verify SFDMU Installation
-        run: sfdmu --version
+      # Step 4: Run the Salesforce CLI container to verify the version
+      - name: Run Salesforce CLI Container
+        run: docker run --rm salesforce/cli:2.77.1-slim sf --version
