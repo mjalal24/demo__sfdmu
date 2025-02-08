@@ -1,24 +1,13 @@
-name: SFDMU Manual Workflow
+name: SF CLI Cache Example
 
-# Allows the workflow to be manually triggered
 on:
-  workflow_dispatch:
-    inputs:
-      operation:
-        description: 'SFDMU Operation to perform (import/export)'
-        required: true
-        default: 'import'
-      config_file:
-        description: 'Path to SFDMU configuration file'
-        required: false
-        default: 'config/sfdmu.json'
+  push: {}
 
 jobs:
   setup-environment:
     runs-on: ubuntu-latest
-
     steps:
-      # Step 1: Checkout the repository
+      # Step 1: Checkout the repository (if needed)
       - name: Checkout Repository
         uses: actions/checkout@v4
 
@@ -26,7 +15,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 'lts/*' # Uses the latest LTS version
+          node-version: 'lts/*'
 
       # Step 3: Configure a custom global npm directory
       - name: Configure npm Global Directory
@@ -34,17 +23,41 @@ jobs:
           mkdir -p $HOME/.npm-global
           npm config set prefix "$HOME/.npm-global"
 
-      # Step 4: Add npm Global to PATH
+      # Step 4: Add the npm global directory to the PATH
       - name: Add npm Global to PATH
         run: echo "$HOME/.npm-global/bin" >> $GITHUB_PATH
 
-      # Step 5: Install Salesforce CLI via npm
-      - name: Install Salesforce CLI
+      # Step 5: Create a file containing the desired SF CLI version
+      - name: Set SF CLI Version File
+        id: sfcli_version
+        run: echo "$(npm info @salesforce/cli version)" > sf-cli-version.txt
+
+      # Step 6: Cache the Salesforce CLI installation directory using the version file as part of the key
+      - name: Cache Salesforce CLI
+        id: cache-sfcli
+        uses: actions/cache@v3
+        with:
+          path: $HOME/.npm-global
+          key: ${{ runner.os }}-sfcli-${{ hashFiles('sf-cli-version.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-sfcli-
+
+      # Step 7: Check and display cache status
+      - name: Check SF CLI Cache Status
         run: |
-          sf --version
+          if [ "${{ steps.cache-sfcli.outputs.cache-hit }}" = "true" ]; then
+            echo "SF CLI installation found in cache."
+          else
+            echo "SF CLI installation not found in cache."
+          fi
+
+      # Step 8: Install Salesforce CLI if cache was not hit
+      - name: Install Salesforce CLI
+        if: steps.cache-sfcli.outputs.cache-hit != 'true'
+        run: |
           echo "Installing Salesforce CLI..."
           npm install @salesforce/cli --global
 
-      # Step 6: Verify Salesforce CLI Installation
+      # Step 9: Verify the Salesforce CLI installation
       - name: Verify Salesforce CLI Installation
         run: sf --version
