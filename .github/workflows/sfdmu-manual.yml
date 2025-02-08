@@ -22,76 +22,28 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # Step 2: Get npm prefix directory
-      - name: Get npm prefix directory
-        id: npm-prefix-dir
-        run: echo "prefix=$(npm config get prefix)" >> $GITHUB_OUTPUT
-
-      # Step 3: Cache NPM dependencies and Global Packages
-      - name: Cache NPM and Global Packages
-        id: cache-npm-and-global
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.npm
-            node_modules
-            ${{ steps.npm-prefix-dir.outputs.prefix }}/lib/node_modules/@salesforce
-            ${{ steps.npm-prefix-dir.outputs.prefix }}/bin/sf
-            ~/.local/share/sf
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('sfdmu-plugin-version.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}-
-            ${{ runner.os }}-node-
-            ${{ runner.os }}-
-
-      # Step 4: Set up Node.js (only if cache miss)
+      # Step 2: Set up Node.js
       - name: Setup Node.js
-        if: steps.cache-npm-and-global.outputs.cache-hit != 'true'
         uses: actions/setup-node@v4
         with:
-          node-version: 'lts/*' # Ensures the latest LTS version is installed
+          node-version: 'lts/*' # Uses the latest LTS version
 
-      # Step 5: Configure a custom global npm directory (only if cache miss)
+      # Step 3: Configure a custom global npm directory
       - name: Configure npm Global Directory
-        if: steps.cache-npm-and-global.outputs.cache-hit != 'true'
         run: |
           mkdir -p $HOME/.npm-global
           npm config set prefix "$HOME/.npm-global"
 
-      # Step 6: Add npm Global to PATH
+      # Step 4: Add npm Global to PATH
       - name: Add npm Global to PATH
         run: echo "$HOME/.npm-global/bin" >> $GITHUB_PATH
 
-      # Step 7: Install Salesforce CLI via npm (only if cache miss)
+      # Step 5: Install Salesforce CLI via npm
       - name: Install Salesforce CLI
-        if: steps.cache-npm-and-global.outputs.cache-hit != 'true'
         run: |
           echo "Installing Salesforce CLI..."
           npm install @salesforce/cli --global
 
-      # Step 8: (SFDMU Plugin caching is handled in Step 3)
-
-      # Step 9: Install SFDMU as a Salesforce CLI Plugin (only if cache miss)
-      - name: Install SFDMU Plugin
-        if: steps.cache-npm-and-global.outputs.cache-hit != 'true'
-        run: |
-          if ! sf plugins --core | grep -q "sfdmu"; then
-            echo "SFDMU plugin not found. Installing..."
-            sf plugins install sfdmu
-            # Save the installed version to a file for cache key hashing
-            sf plugins --core | grep "sfdmu" | awk '{print $2}' > sfdmu-plugin-version.txt
-          else
-            echo "SFDMU plugin already installed."
-            sf plugins --core | grep "sfdmu" | awk '{print $2}' > sfdmu-plugin-version.txt
-          fi
-
-      # Step 10: Restore SFDMU Plugin Cache if Available
-      # (Handled within the main cache step (Step 3))
-
-      # Step 11: Verify Salesforce CLI Installation (Optional)
+      # Step 6: Verify Salesforce CLI Installation
       - name: Verify Salesforce CLI Installation
         run: sf --version
-
-      # Step 12: Verify SFDMU Installation (Optional)
-      - name: Verify SFDMU Installation
-        run: sf sfdmu run --version
