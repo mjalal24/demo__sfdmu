@@ -1,4 +1,4 @@
-name: SF CLI Docker Workflow with Caching
+name: SF CLI Docker Workflow with sfdx-git-delta
 
 on:
   push:
@@ -6,37 +6,43 @@ on:
       - main
 
 jobs:
-  run-sf-cli:
-    runs-on: ubuntu-latest 
+  generate-manifest:
+    runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the repository (if needed)
+      # Step 1: Checkout the repository (includes the Dockerfile)
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # Step 2: Restore (or create) a cache for the Docker image tar file
-      - name: Cache Docker Image
+      # Step 2: Cache the custom Docker image as a tar file.
+      - name: Cache Custom Docker Image
         id: cache-docker
         uses: actions/cache@v3
         with:
-          # This is the file we will use to cache the Docker image.
-          path: sf-cli.tar
-          # The key uniquely identifies the cached content.
-          key: sf-cli-slim
+          # Cache the tarball of the custom Docker image.
+          path: cli-delta.tar
+          key: cli-delta-image
 
-      # Step 3: Load the Docker image from cache if available, otherwise pull and save it
-      - name: Load or Pull Docker Image
+      # Step 3: Load the cached image if available, otherwise build it.
+      - name: Load or Build Custom Docker Image
         run: |
-          if [ -f sf-cli.tar ]; then
-            echo "Cached Docker image found. Loading the image..."
-            docker load -i sf-cli.tar
+          if [ -f cli-delta.tar ]; then
+            echo "Cached Docker image found. Loading image..."
+            docker load -i cli-delta.tar
           else
-            echo "No cached image found. Pulling image from Docker Hub..."
-            docker pull salesforce/cli:2.77.1-slim
-            echo "Saving the pulled image to cache..."
-            docker save salesforce/cli:2.77.1-slim -o sf-cli.tar
+            echo "No cached image found. Building custom Docker image..."
+            docker build -t salesforce/cli-delta:latest .
+            docker save salesforce/cli-delta:latest -o cli-delta.tar
           fi
 
-      # Step 4: Run the Salesforce CLI container to verify the version
-      - name: Run Salesforce CLI Container
-        run: docker run --rm salesforce/cli:2.77.1-slim sf --version
+      # Step 4: Run the container to generate and display the manifest.
+      - name: Generate Manifest Using sfdx-git-delta
+        run: |
+          # Ensure the 'manifest' directory exists.
+          mkdir -p manifest
+          # Run the container with the repository mounted.
+          docker run --rm \
+            -v "$PWD":/workspace \
+            -w /workspace \
+            salesforce/cli-delta:latest \
+            sh -c "sfdx-git-delta --from HEAD~1 --to HEAD --output manifest/package.xml && echo 'Generated manifest:' && cat manifest/package.xml"
