@@ -7,7 +7,7 @@ jobs:
   setup-environment:
     runs-on: ubuntu-latest
     steps:
-      # Step 1: Checkout the repository (if needed)
+      # Step 1: Checkout the repository
       - name: Checkout Repository
         uses: actions/checkout@v4
 
@@ -27,22 +27,28 @@ jobs:
       - name: Add npm Global to PATH
         run: echo "$HOME/.npm-global/bin" >> $GITHUB_PATH
 
-      # Step 5: Create a file containing the desired SF CLI version
+      # Step 5: Create a file containing the desired SF CLI version (used in cache key)
       - name: Set SF CLI Version File
         id: sfcli_version
         run: echo "$(npm info @salesforce/cli version)" > sf-cli-version.txt
 
-      # Step 6: Cache the Salesforce CLI installation directory using the version file as part of the key
+      # Step 6: Ensure that the Salesforce CLI module directory exists
+      - name: Ensure Salesforce CLI Directory Exists
+        run: mkdir -p $HOME/.npm-global/lib/node_modules/@salesforce/cli
+
+      # Step 7: Cache the Salesforce CLI directories (modules and executable)
       - name: Cache Salesforce CLI
         id: cache-sfcli
         uses: actions/cache@v3
         with:
-          path: $HOME/.npm-global
+          path: |
+            $HOME/.npm-global/lib/node_modules/@salesforce/cli
+            $HOME/.npm-global/bin/sf
           key: ${{ runner.os }}-sfcli-${{ hashFiles('sf-cli-version.txt') }}
           restore-keys: |
             ${{ runner.os }}-sfcli-
 
-      # Step 7: Check and display cache status
+      # Step 8: Echo cache status for clarity
       - name: Check SF CLI Cache Status
         run: |
           if [ "${{ steps.cache-sfcli.outputs.cache-hit }}" = "true" ]; then
@@ -51,13 +57,13 @@ jobs:
             echo "SF CLI installation not found in cache."
           fi
 
-      # Step 8: Install Salesforce CLI if cache was not hit
+      # Step 9: Install Salesforce CLI if the cache was not found
       - name: Install Salesforce CLI
         if: steps.cache-sfcli.outputs.cache-hit != 'true'
         run: |
           echo "Installing Salesforce CLI..."
           npm install @salesforce/cli --global
 
-      # Step 9: Verify the Salesforce CLI installation
+      # Step 10: Verify the Salesforce CLI installation
       - name: Verify Salesforce CLI Installation
         run: sf --version
