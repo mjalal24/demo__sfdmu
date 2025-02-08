@@ -1,4 +1,4 @@
-name: Custom SF CLI Image Workflow with sfdx-git-delta
+name: Custom SF CLI Delta Generation Workflow
 
 on:
   push:
@@ -6,41 +6,49 @@ on:
       - main
 
 jobs:
-  generate-manifest:
+  generate-delta:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the repository (which includes the Dockerfile)
+      # 1. Checkout the repository (includes Dockerfile).
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # Step 2: Cache the custom Docker image as a tar file.
+      # 2. Cache the custom Docker image as a tar file.
       - name: Cache Custom Docker Image
         id: cache-docker
         uses: actions/cache@v3
         with:
-          path: custom-cli.tar
-          key: custom-cli-image
+          path: custom-sf.tar
+          key: custom-sf-image
 
-      # Step 3: Load the cached image if available, otherwise build it.
+      # 3. Load the cached image if available; otherwise, build it.
       - name: Load or Build Custom Docker Image
         run: |
-          if [ -f custom-cli.tar ]; then
+          if [ -f custom-sf.tar ]; then
             echo "Cached Docker image found. Loading image..."
-            docker load -i custom-cli.tar
+            docker load -i custom-sf.tar
           else
             echo "No cached image found. Building custom Docker image..."
             docker build -t custom-sf:latest .
-            docker save custom-sf:latest -o custom-cli.tar
+            docker save custom-sf:latest -o custom-sf.tar
           fi
 
-      # Step 4: Run the container to generate and display the manifest.
-      - name: Generate Manifest Using sfdx-git-delta
+      # 4. Generate the delta manifest.
+      - name: Generate Delta Manifest Using sfdx-git-delta
         run: |
-          # Create a directory for the manifest if it doesn't exist.
-          mkdir -p manifest
+          # Ensure output directories exist.
+          mkdir -p package destructiveChanges
+          # Run the container with the repository mounted.
           docker run --rm \
             -v "$PWD":/workspace \
             -w /workspace \
             custom-sf:latest \
-            sh -c "sfdx-git-delta --from HEAD~1 --to HEAD --output manifest/package.xml && echo 'Generated manifest:' && cat manifest/package.xml"
+            sh -c "sf sgd source delta --to HEAD --from HEAD~1 --output-dir ."
+          
+          # Display the generated artifacts.
+          echo "Generated package/package.xml:"
+          cat package/package.xml || echo "package.xml not found."
+          echo ""
+          echo "Generated destructiveChanges/destructiveChanges.xml:"
+          cat destructiveChanges/destructiveChanges.xml || echo "destructiveChanges.xml not found."
