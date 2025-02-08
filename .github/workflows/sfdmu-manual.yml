@@ -1,37 +1,23 @@
-name: SFDMU Workflow
+name: SF CLI Docker Workflow
+
 on:
   push:
     branches:
       - main
+
 jobs:
-  setup-environment:
+  run-sf-cli:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the repository
+      # Step 1: Checkout the repository (optional if you need your code)
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # Step 2: Set up Node.js using the latest LTS version
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 'lts/*'
+      # Step 2: Pull the Salesforce CLI Docker image
+      - name: Pull Salesforce CLI Docker Image
+        run: docker pull salesforce/cli
 
-      # Step 3: Configure a custom global npm directory
-      - name: Configure npm Global Directory
-        run: |
-          mkdir -p $HOME/.npm-global
-          npm config set prefix "$HOME/.npm-global"
-
-      # Step 4: Add npm Global Directory to PATH
-      - name: Add npm Global to PATH
-        run: echo "$HOME/.npm-global/bin" >> $GITHUB_PATH
-
-      # Step 5: Install Salesforce CLI via npm
-      - name: Install Salesforce CLI
-        run: npm install @salesforce/cli --global
-
-      # Step 6: Verify Salesforce CLI Installation
-      - name: Verify Salesforce CLI Installation
-        run: sf --version
+      # Step 3: Run the Salesforce CLI container and check its version
+      - name: Run Salesforce CLI Container
+        run: docker run --rm salesforce/cli sf --version
