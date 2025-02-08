@@ -10,14 +10,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the repository (optional if you need your code)
+      # Step 1: Checkout the repository (optional, if you need your code)
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # Step 2: Pull the Salesforce CLI Docker image
+      # Step 2: Pull the specific Salesforce CLI Docker image
       - name: Pull Salesforce CLI Docker Image
-        run: docker pull salesforce/cli
+        run: docker pull salesforce/cli:2.77.1-slim
 
       # Step 3: Run the Salesforce CLI container and check its version
       - name: Run Salesforce CLI Container
-        run: docker run --rm salesforce/cli sf --version
+        run: docker run --rm salesforce/cli:2.77.1-slim sf --version
