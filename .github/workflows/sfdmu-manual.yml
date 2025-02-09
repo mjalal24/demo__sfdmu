@@ -16,7 +16,19 @@ jobs:
         with:
           fetch-depth: 0  # This fetches the complete Git history.
 
-      # Step 2: Cache the custom Docker image as a tar file.
+      # Step 2: Explicitly fetch all remote branches so that references like origin/development exist.
+      - name: Fetch Remote Branches
+        run: git fetch --all
+
+      # (Optional) Verify that the Git references exist.
+      - name: Verify Git References
+        run: |
+          echo "Current commit (HEAD):"
+          git rev-parse HEAD
+          echo "Remote branch 'origin/development' commit:"
+          git rev-parse origin/development || echo "origin/development not found"
+
+      # Step 3: Cache the custom Docker image as a tar file.
       - name: Cache Custom Docker Image
         id: cache-docker
         uses: actions/cache@v3
@@ -24,7 +36,7 @@ jobs:
           path: custom-sf.tar
           key: custom-sf-image
 
-      # Step 3: Load the cached image if available; otherwise, build it.
+      # Step 4: Load the cached image if available; otherwise, build it.
       - name: Load or Build Custom Docker Image
         run: |
           if [ -f custom-sf.tar ]; then
@@ -36,13 +48,13 @@ jobs:
             docker save custom-sf:latest -o custom-sf.tar
           fi
 
-      # Step 4: Generate the delta manifest.
+      # Step 5: Generate the delta manifest.
       - name: Generate Delta Manifest Using sfdx-git-delta
         run: |
           # Ensure output directories exist.
           mkdir -p package destructiveChanges
           # Run the container with the repository mounted.
-          # Here we compare the current commit (HEAD) with the remote branch "origin/development".
+          # Compare the current commit (HEAD) with the remote branch "origin/development".
           docker run --rm \
             -v "$PWD":/workspace \
             -w /workspace \
