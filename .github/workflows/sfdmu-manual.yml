@@ -10,11 +10,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout the repository (includes Dockerfile).
+      # Step 1: Checkout the repository with full Git history.
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # This fetches the complete Git history.
 
-      # 2. Cache the custom Docker image as a tar file.
+      # Step 2: Cache the custom Docker image as a tar file.
       - name: Cache Custom Docker Image
         id: cache-docker
         uses: actions/cache@v3
@@ -22,7 +24,7 @@ jobs:
           path: custom-sf.tar
           key: custom-sf-image
 
-      # 3. Load the cached image if available; otherwise, build it.
+      # Step 3: Load the cached image if available; otherwise, build it.
       - name: Load or Build Custom Docker Image
         run: |
           if [ -f custom-sf.tar ]; then
@@ -34,7 +36,7 @@ jobs:
             docker save custom-sf:latest -o custom-sf.tar
           fi
 
-      # 4. Generate the delta manifest.
+      # Step 4: Generate the delta manifest.
       - name: Generate Delta Manifest Using sfdx-git-delta
         run: |
           # Ensure output directories exist.
