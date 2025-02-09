@@ -59,7 +59,7 @@ jobs:
             -v "$PWD":/workspace \
             -w /workspace \
             custom-sf:latest \
-            sh -c "sf sgd source delta -to "HEAD" --from "HEAD~1" --output-dir ."
+            sh -c "sf sgd source delta --to "o HEAD"--from "HEAD^" --output-dir ."
           
           # Display the generated artifacts.
           echo "Generated package/package.xml:"
