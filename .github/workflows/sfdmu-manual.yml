@@ -14,9 +14,9 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # This fetches the complete Git history.
+          fetch-depth: 0  # Fetch the complete Git history.
 
-      # Step 2: Explicitly fetch all remote branches so that references like origin/development exist.
+      # Step 2: Fetch all remote branches so that references like origin/development exist.
       - name: Fetch Remote Branches
         run: git fetch --all
 
@@ -48,19 +48,20 @@ jobs:
             docker save custom-sf:latest -o custom-sf.tar
           fi
 
-      # Step 5: Generate the delta manifest.
-      - name: Generate Delta Manifest Using sfdx-git-delta
+      # Step 5: Generate the delta manifest using sfdx-git-delta.
+      - name: Generate Delta Manifest
         run: |
-          # Ensure output directories exist.
+          # Ensure the output directories exist.
           mkdir -p package destructiveChanges
-          # Run the container with the repository mounted.
-          # Compare the current commit (HEAD) with the remote branch "origin/development".
+
+          # Run the Docker container with the current repository mounted.
+          # Compare the remote branch 'origin/development' with the current commit (HEAD).
           docker run --rm \
             -v "$PWD":/workspace \
             -w /workspace \
             custom-sf:latest \
-            sh -c "sf sgd source delta --to "o HEAD" --from "HEAD^" --output-dir ."
-          
+            sh -c 'sf sgd source delta --from origin/development --to HEAD --output-dir .'
+
           # Display the generated artifacts.
           echo "Generated package/package.xml:"
           cat package/package.xml || echo "package.xml not found."
