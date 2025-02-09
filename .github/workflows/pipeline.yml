@@ -1,0 +1,28 @@
+name: Build and Test Docker Image
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the repository code.
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Docker Buildx (optional but recommended for caching and advanced build options).
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      # Step 3: Build the Docker image.
+      - name: Build Docker image
+        run: docker build -t my-sf-node-image .
+
+      # Step 4: Run a test container to verify that the Salesforce CLI is working.
+      - name: Test Salesforce CLI version
+        run: docker run --rm my-sf-node-image sf --version
