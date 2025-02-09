@@ -32,4 +32,4 @@ jobs:
       # Step 5: Run Git diff inside the Docker container.
       # This mounts the GitHub workspace into /app in the container so that git can access your repository.
       - name: Run Git diff in Docker container
-        run: docker run --rm -v ${{ github.workspace }}:/app my-sf-node-image git diff HEAD^ HEAD
+        run: docker run --rm -v ${{ github.workspace }}:/app my-sf-node-image git diff HEAD~1 HEAD
