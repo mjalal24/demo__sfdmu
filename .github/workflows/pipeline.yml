@@ -1,4 +1,4 @@
-name: Build and Test Docker Image
+name: Run in Container Built from Dockerfile
 
 on:
   push:
@@ -9,27 +9,26 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      build:
+        context: .
+        dockerfile: Dockerfile
+    defaults:
+      run:
+        # This ensures that the commands run in the repository folder
+        working-directory: /github/workspace
 
     steps:
-      # Step 1: Checkout your repository with full history.
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # This fetches the entire commit history
+          fetch-depth: 0  # Fetch full commit history so that HEAD^ exists
 
-      # Step 2: Set up Docker Buildx (optional but recommended for advanced build features).
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+      - name: List repository files (for debugging)
+        run: ls -la /github/workspace
 
-      # Step 3: Build the Docker image using your Dockerfile.
-      - name: Build Docker image
-        run: docker build -t my-sf-node-image .
+      - name: Run Git diff
+        run: git diff HEAD^ HEAD
 
-      # Step 4: Test that the Salesforce CLI is installed by printing its version.
-      - name: Test Salesforce CLI version
-        run: docker run --rm my-sf-node-image sf --version
-
-      # Step 5: Run Git diff inside the Docker container.
-      # This mounts the GitHub workspace into /app in the container so that git can access your repository.
-      - name: Run Git diff in Docker container
-        run: docker run --rm -v ${{ github.workspace }}:/app my-sf-node-image git diff HEAD~1 HEAD
+      - name: Show Salesforce CLI version
+        run: sf --version
