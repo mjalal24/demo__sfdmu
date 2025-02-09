@@ -11,9 +11,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout your repository so the Dockerfile and code are available.
+      # Step 1: Checkout your repository with full history.
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # This fetches the entire commit history
 
       # Step 2: Set up Docker Buildx (optional but recommended for advanced build features).
       - name: Set up Docker Buildx
