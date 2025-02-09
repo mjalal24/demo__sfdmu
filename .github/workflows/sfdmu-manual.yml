@@ -42,12 +42,12 @@ jobs:
           # Ensure output directories exist.
           mkdir -p package destructiveChanges
           # Run the container with the repository mounted.
-          # Here we compare the current commit (HEAD) with the remote branch "origin/main".
+          # Here we compare the current commit (HEAD) with the remote branch "origin/development".
           docker run --rm \
             -v "$PWD":/workspace \
             -w /workspace \
             custom-sf:latest \
-            sh -c "sf sgd source delta --to HEAD --from origin/main --output-dir ."
+            sh -c "sf sgd source delta --to HEAD --from origin/development --output-dir ."
           
           # Display the generated artifacts.
           echo "Generated package/package.xml:"
