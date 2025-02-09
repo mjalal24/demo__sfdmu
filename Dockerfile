@@ -1,9 +1,9 @@
 # Use an official Node 18 image (satisfies Node >=18.6.0)
 FROM node:18
 
-# (Optional) Install any extra OS-level dependencies.
+# (Optional) Install extra OS-level dependencies, including Git.
 RUN apt-get update && \
-    apt-get install -y wget unzip && \
+    apt-get install -y git wget unzip && \
     rm -rf /var/lib/apt/lists/*
 
 # Install the new Salesforce CLI.
@@ -15,7 +15,7 @@ RUN echo "Verifying SF CLI installation:" && sf --version
 # Install the sfdx-git-delta plugin via the new CLI (auto-confirm with echo y).
 RUN echo y | sf plugins install sfdx-git-delta
 
-# Verify that the sfdx-git-delta (sgd) plugin is installed.
+# Verify that the sgd plugin is installed.
 RUN echo "Verifying sgd plugin installation:" && sf sgd --help
 
 # Set the working directory where your repository will be mounted.

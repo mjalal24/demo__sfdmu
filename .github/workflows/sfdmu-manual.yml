@@ -20,14 +20,6 @@ jobs:
       - name: Fetch Remote Branches
         run: git fetch --all
 
-      # (Optional) Verify the current commit and its parent.
-      - name: Verify Git References
-        run: |
-          echo "Current commit (HEAD):"
-          git rev-parse HEAD
-          echo "Previous commit (HEAD^):"
-          git rev-parse HEAD^ 2>/dev/null || echo "No previous commit available."
-
       # Step 3: Cache the custom Docker image as a tar file.
       - name: Cache Custom Docker Image
         id: cache-docker
@@ -49,33 +41,10 @@ jobs:
           fi
 
       # Step 5: Generate the delta manifest using commit SHA pointers.
+      # This step runs the 'sf sgd:source:delta' command inside the custom-sf container.
       - name: Generate Delta Manifest
         run: |
-          # Ensure the output directories exist.
-          mkdir -p package destructiveChanges
-
-          # Get the commit SHAs.
-          FROM_SHA=$(git rev-parse HEAD^ 2>/dev/null || echo "")
-          TO_SHA=$(git rev-parse HEAD)
-
-          # If there is no previous commit (e.g., on the first commit), use the same commit for both.
-          if [ -z "$FROM_SHA" ]; then
-            echo "No previous commit found. Using the current commit for both from and to."
-            FROM_SHA=$TO_SHA
-          fi
-
-          echo "Generating delta from commit $FROM_SHA to $TO_SHA"
-
-          # Run the container and pass the resolved commit SHAs.
           docker run --rm \
-            -v "$PWD":/workspace \
-            -w /workspace \
+            -v "${{ github.workspace }}:/workspace" \
             custom-sf:latest \
-            sh -c "sf sgd source delta --from ${FROM_SHA} --to ${TO_SHA} --output-dir ."
-
-          # Display the generated artifacts.
-          echo "Generated package/package.xml:"
-          cat package/package.xml || echo "package.xml not found."
-          echo ""
-          echo "Generated destructiveChanges/destructiveChanges.xml:"
-          cat destructiveChanges/destructiveChanges.xml || echo "destructiveChanges.xml not found."
+            sf sgd:source:delta --to "HEAD" --from "HEAD^" --output /workspace
